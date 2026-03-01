@@ -33,6 +33,4 @@ private:
     static std::atomic_int numCreated_;
 
 
-public:
-
 };
