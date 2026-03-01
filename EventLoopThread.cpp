@@ -36,7 +36,7 @@ void EventLoopThread::threadFunc() {
     EventLoop loop;              
 
     if (callback_) {
-        callback_();
+        callback_(&loop);
     }
 
     {
