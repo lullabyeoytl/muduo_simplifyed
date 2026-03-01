@@ -1,7 +1,7 @@
 #include "Channel.hpp"
 
 #include <sys/epoll.h>
-
+#include "EventLoop.hpp"
 const int Channel::kNoneEvent = 0;
 const int Channel::kReadEvent = EPOLLIN | EPOLLPRI;
 const int Channel::kWriteEvent = EPOLLOUT;
@@ -17,12 +17,11 @@ void Channel::tie(const std::shared_ptr<void> &obj) {
 }
 
 void Channel::update() {
-    // loop_->updateChannel(this);
+    loop_->updateChannel(this);
 }
 
 void Channel::remove() {
-    // todo
-    // loop_->removeChannel(this);
+    loop_->removeChannel(this);
 }
 
 void Channel::handleEvent(Timestamp receiveTime) {
