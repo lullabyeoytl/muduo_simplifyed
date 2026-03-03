@@ -31,7 +31,9 @@ public:
         threadInitCallback_ = cb;
     }
 
-    void setThreadNum(int numThreads);
+    void setThreadNum(int numThreads){
+        threadPool_->setThreadNumber(numThreads);
+    };
 
     void setConnectionCallback(const ConnectionCallback& cb){
         connectionCallback_ = cb;
