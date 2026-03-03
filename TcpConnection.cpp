@@ -27,6 +27,10 @@ TcpConnection::TcpConnection(EventLoop *loop, const std::string &name,
   socket_->setKeepAlive(true);
 }
 
+TcpConnection::~TcpConnection(){
+    printf("TcpConnection destroyed\n");
+}
+
 void TcpConnection::handleRead(Timestamp receriveTime)
 {
     int savedErrno = 0;
@@ -169,7 +173,6 @@ void TcpConnection::connectEstablished()
 
     TcpConnectionPtr connptr(shared_from_this());
     connectionCallback_(connptr);
-    closeCallback_(connptr);
 }
 
 void TcpConnection::connectDestroyed()
@@ -191,4 +194,17 @@ void TcpConnection::shutdown()
         setState(kDisconnecting);
         loop_ -> runInLoop(std::bind(&TcpConnection::shutdownInLoop, this));
     }
+}
+
+void TcpConnection::shutdownInLoop()
+{
+  if (!channel_->isWriting())
+  {
+    // we are not writing
+    socket_->shutdownWrite();
+  }
+}
+
+void TcpConnection::handleError(){
+    LOG_ERROR("tcpconnection error");
 }

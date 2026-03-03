@@ -29,6 +29,8 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::
         std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
+TcpServer::~TcpServer(){}
+
 void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
 {
     // 轮询选则一个subloop

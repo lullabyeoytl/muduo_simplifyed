@@ -57,6 +57,8 @@ public:
   // called when TcpServer has removed me from its map
   void connectDestroyed();  // should be called only once
 
+  void send(const std::string& buf);
+
 private:
   enum StateE { kDisconnected, kConnecting, kConnected, kDisconnecting };
   void setState(StateE state) {state_ = state;}
@@ -65,7 +67,6 @@ private:
   void handleClose();
   void handleError();
 
-  void send(const std::string& buf);
   void sendInLoop(const void *message, size_t len);
   
   void shutdownInLoop();

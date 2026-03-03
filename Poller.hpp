@@ -12,7 +12,7 @@ class Poller : noncopyable {
 public:
   using ChannelList = std::vector<Channel *>;
   Poller(EventLoop *loop);
-  virtual ~Poller();
+  virtual ~Poller(){};
 
   // 所有IO复用保留的统一接口
   virtual Timestamp poll(int timeoutsMs, ChannelList *activeChannels) = 0;

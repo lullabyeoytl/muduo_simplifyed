@@ -1,6 +1,9 @@
 #include "thread.hpp"
+#include <atomic>
 #include <semaphore.h>
 #include "CurrentThread.hpp"
+
+std::atomic_int Thread::numCreated_(0);
 
 Thread::Thread(ThreadFunc func, const std::string &name)
     : started_(false), joined_(false), thread_(nullptr), tid_(0), func_(std::move(func)), name_(name) {

@@ -31,6 +31,4 @@ private:
     ThreadFunc func_;
     std::string name_;
     static std::atomic_int numCreated_;
-
-
 };
