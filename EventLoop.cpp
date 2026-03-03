@@ -59,7 +59,7 @@ void EventLoop::loop()
     looping_ = true;
     quit_ = false;
 
-    LOG_INFO("EventLoop %p start looping \n", this);
+    // LOG_INFO("EventLoop %p start looping \n", this);
 
     while(!quit_)
     {

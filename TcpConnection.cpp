@@ -28,7 +28,7 @@ TcpConnection::TcpConnection(EventLoop *loop, const std::string &name,
 }
 
 TcpConnection::~TcpConnection(){
-    printf("TcpConnection destroyed\n");
+    // printf("TcpConnection destroyed\n");
 }
 
 void TcpConnection::handleRead(Timestamp receriveTime)

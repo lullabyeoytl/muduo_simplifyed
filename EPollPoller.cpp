@@ -48,7 +48,7 @@ Timestamp EPollPoller::poll(int timeoutsMs, ChannelList* activeChannels)
 void EPollPoller::updateChannel(Channel* channel)
 {
     const int index = channel->index();
-    LOG_INFO("fd=%d events=%d index=%d \n", channel->fd(), channel->events(), index);
+    // LOG_INFO("fd=%d events=%d index=%d \n", channel->fd(), channel->events(), index);
     if (index == kNew || index == kDeleted) {
         if (index == kNew) {
             int fd = channel->fd();
@@ -75,7 +75,7 @@ void EPollPoller::update(int operation, Channel* channel)
     event.events = channel->events();
     event.data.ptr = channel;
     int fd = channel->fd();
-    LOG_INFO("func=%s epoll_ctl op=%d fd=%d event=%d \n", __FUNCTION__, operation, fd, event.events);
+    // LOG_INFO("func=%s epoll_ctl op=%d fd=%d event=%d \n", __FUNCTION__, operation, fd, event.events);
     if (::epoll_ctl(epollfd_, operation, fd, &event) < 0) {
         if (operation == EPOLL_CTL_DEL) {
             LOG_ERROR("epoll_ctl del error:%d \n", errno);
@@ -90,7 +90,7 @@ void EPollPoller::removeChannel(Channel *channel)
     int fd = channel->fd();
     channels_.erase(fd);
 
-    LOG_INFO("func=%s fd=%d \n", __FUNCTION__, fd);
+    // LOG_INFO("func=%s fd=%d \n", __FUNCTION__, fd);
     
     int index = channel->index();
     if (index == kAdded) {
