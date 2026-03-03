@@ -89,6 +89,7 @@ public:
     }
 
     ssize_t readFd(int fd, int* saveErrno);
+    ssize_t writeFd(int fd, int* savedErrno);
 private:
     // 兼容纯c接口
     char *begin() { return &*buffer_.begin(); }
