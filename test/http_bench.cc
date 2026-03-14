@@ -57,13 +57,15 @@ private:
   }
 
   void onMessage(const TcpConnectionPtr &conn, Buffer *buf, Timestamp) {
-    // notice that the callback of one tcp connection only triggered in current thread
-    // no need to use request_mutex_ in onMessage function
     std::string pendingInput = buf->retrieveAllAsString();
     std::string pending;
-    
-    pending = requestBuffers_[conn->name()];
-    pending.append(pendingInput);
+    // notice that the callback of one tcp connection only triggered in current thread when multi-acceptors
+    // even no need to use request_mutex_ in onMessage function
+    {
+      std::lock_guard<std::mutex> lock(requestMutex_);
+      pending = requestBuffers_[conn->name()];
+      pending.append(pendingInput);
+    }
 
     while (true) {
       const std::string::size_type headerEnd = pending.find("\r\n\r\n");
@@ -75,8 +77,10 @@ private:
       pending.erase(0, headerEnd + 4);
     }
 
-    requestBuffers_[conn->name()] = pending;
-
+    {
+      std::lock_guard<std::mutex> lock(requestMutex_);
+      requestBuffers_[conn->name()] = pending;
+    }
   }
 
   TcpServer server_;

@@ -58,3 +58,9 @@ python3 test/compare_with_nginx.py --threads 12 --connections 500 --duration 10s
 ```
 
 This uses `wrk` to benchmark a tiny keep-alive HTTP server built on this project against a local nginx instance serving the same `hello world` payload.
+
+| Target | Avg req/s | Best req/s | Worst req/s | Stddev req/s | Avg latency | Relative to nginx |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| mymuduo-reuseport | 72446.89 | 73400.75 | 70843.77 | 1140.38 | 31.12ms | 1.1911x |
+| mymuduo-noreuseport | 47069.52 | 74416.99 | 276.25 | 33244.72 | 24.33ms | 0.7739x |
+| nginx | 60822.94 | 62722.50 | 59686.13 | 1351.84 | 37.07ms | 1.0000x |
