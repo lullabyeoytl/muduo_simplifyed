@@ -33,7 +33,7 @@ EventLoop::EventLoop()
       wakeupChannel_(new Channel(this,wakeupFd_)),
       currentActiveChannel_(nullptr)
 {
-    LOG_DEBUG("EventLoop create %p in thread %d \n", this, threadid_);
+    LOG_DEBUG("EventLoop create %p in thread %d \n", this, threadId_);
     if (t_loopInThisThread)
     {
         LOG_FATAL("Another EventLoop %p exists in this thread %d \n", t_loopInThisThread, threadId_);

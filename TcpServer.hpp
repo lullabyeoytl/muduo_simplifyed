@@ -4,6 +4,8 @@
 #include <functional>
 #include <string>
 #include <atomic>
+#include <mutex>
+#include <vector>
 #include "EventLoop.hpp"
 #include "InetAddress.hpp"
 #include "acceptor.hpp"
@@ -46,16 +48,18 @@ public:
     void start();
 
 private:
-    void newConnection(int sockfd, const InetAddress& peerAddr);
+    void newConnection(EventLoop* acceptLoop, int sockfd, const InetAddress& peerAddr);
     void removeConnection(const TcpConnectionPtr& conn);
     void removeConnectionInLoop(const TcpConnectionPtr& conn);
 
     typedef std::map<std::string, TcpConnectionPtr> ConnectionMap;
 
     EventLoop* loop_;
+    const InetAddress listenAddr_;
     const std::string IpPort_;
     const std::string name_;
-    std::unique_ptr<Acceptor> acceptor_;
+    const bool reusePort_;
+    std::vector<std::unique_ptr<Acceptor>> acceptors_;
     std::shared_ptr<EventLoopThreadPool> threadPool_;
 
     ConnectionCallback connectionCallback_;
@@ -65,6 +69,7 @@ private:
     ThreadInitCallback threadInitCallback_;
     std::atomic_int started_;
 
-    int nextConnId_;
+    std::atomic_int nextConnId_;
+    std::mutex connectionMutex_;
     ConnectionMap connections_;
 };

@@ -8,12 +8,14 @@ EventLoopThreadPool::~EventLoopThreadPool() {}
 
 void EventLoopThreadPool::start(const ThreadInitCallback &cb) {
     started_ = true;
+    loops_.clear();
 
     for(int i = 0; i < numThreads_; ++i) {
         char buf[name_.size() + 32];
         snprintf(buf, sizeof buf, "%s%d", name_.c_str(), i);
         EventLoopThread *t = new EventLoopThread(cb, buf);
         threads_.push_back(std::unique_ptr<EventLoopThread>(t));
+        loops_.push_back(t->startLoop());
     }
 
     // only have one thread, no need to create new thread, use baseLoop_ directly
@@ -23,11 +25,11 @@ void EventLoopThreadPool::start(const ThreadInitCallback &cb) {
 }
 
 std::vector<EventLoop*> EventLoopThreadPool::getAllLoops() {
-    if (loops_.empty()) {
-        return std::vector<EventLoop*>(1, baseLoop_);
-    } else {
-        return loops_;
-    }
+    std::vector<EventLoop*> allLoops;
+    allLoops.reserve(loops_.size() + 1);
+    allLoops.push_back(baseLoop_);
+    allLoops.insert(allLoops.end(), loops_.begin(), loops_.end());
+    return allLoops;
 }
 
 EventLoop *EventLoopThreadPool::getNextLoop() {

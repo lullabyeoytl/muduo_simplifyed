@@ -14,9 +14,10 @@ EventLoop* CheckLoopNotNull(EventLoop* loop)
 
 TcpServer::TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::string &nameArg, Option option)
     : loop_(CheckLoopNotNull(loop)),
+      listenAddr_(listenAddr),
       IpPort_(listenAddr.toIpPort()),
       name_(nameArg),
-      acceptor_(new Acceptor(loop, listenAddr, option == kReusePort)),
+      reusePort_(option == kReusePort),
       threadPool_(new EventLoopThreadPool(loop, name_)),
     //   connectionCallback_(defaultConnectionCallback),
     //   messageCallback_(defaultMessageCallback),
@@ -25,20 +26,17 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddress& listenAddr, const std::
       started_(0),
       nextConnId_(1)
 {
-   acceptor_->setNewConnectionCallback(
-        std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 TcpServer::~TcpServer(){}
 
-void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
+void TcpServer::newConnection(EventLoop* acceptLoop, int sockfd, const InetAddress& peerAddr)
 {
-    // 轮询选则一个subloop
-    EventLoop* ioLoop = threadPool_->getNextLoop();
+    EventLoop* ioLoop = reusePort_ ? acceptLoop : threadPool_->getNextLoop();
 
     char buf[32];
-    snprintf(buf, sizeof buf, ":%s#%d", IpPort_.c_str(), nextConnId_);
-    ++nextConnId_;
+    int connId = nextConnId_.fetch_add(1);
+    snprintf(buf, sizeof buf, ":%s#%d", IpPort_.c_str(), connId);
     std::string connName = name_ + buf;
 
     // LOG_INFO("TcpServer::newConnection [%s] - new connection [%s] from %s", name_.c_str(), connName.c_str(), peerAddr.toIpPort().c_str());
@@ -52,7 +50,10 @@ void TcpServer::newConnection(int sockfd, const InetAddress& peerAddr)
     InetAddress localAddr(local);
 
     TcpConnectionPtr conn(new TcpConnection(ioLoop, connName, sockfd, localAddr, peerAddr));
-    connections_[connName] = conn;
+    {
+        std::lock_guard<std::mutex> lock(connectionMutex_);
+        connections_[connName] = conn;
+    }
 
     // set by user
     conn->setConnectionCallback(connectionCallback_);
@@ -67,7 +68,32 @@ void TcpServer::start()
     if (started_++ == 0)
     {
         threadPool_->start(threadInitCallback_);
-        loop_->runInLoop(std::bind(&Acceptor::listen, acceptor_.get()));
+
+        std::vector<EventLoop*> acceptLoops;
+        if (reusePort_)
+        {
+            // reusePort -> thread set one acceptor
+            acceptLoops = threadPool_->getAllLoops();
+        }
+        else
+        {
+            // if not: onlu set base loop for accepting 
+            acceptLoops.push_back(loop_);
+        }
+
+        acceptors_.reserve(acceptLoops.size());
+        for (EventLoop* acceptLoop : acceptLoops)
+        {
+            std::unique_ptr<Acceptor> acceptor(new Acceptor(acceptLoop, listenAddr_, reusePort_));
+            acceptor->setNewConnectionCallback(
+                std::bind(&TcpServer::newConnection, this, acceptLoop, std::placeholders::_1, std::placeholders::_2));
+            acceptors_.push_back(std::move(acceptor));
+        }
+
+        for (size_t i = 0; i < acceptLoops.size(); ++i)
+        {
+            acceptLoops[i]->runInLoop(std::bind(&Acceptor::listen, acceptors_[i].get()));
+        }
     }
 }
 
@@ -83,7 +109,10 @@ void TcpServer::removeConnectionInLoop(const TcpConnectionPtr &conn)
     // LOG_INFO("TcpServer::removeConnectionInLoop [%s] - connection %s \n",
         // name_.c_str(), conn->name().c_str());
 
-    connections_.erase(conn->name());
+    {
+        std::lock_guard<std::mutex> lock(connectionMutex_);
+        connections_.erase(conn->name());
+    }
     EventLoop *ioLoop = conn->getLoop();
     ioLoop->queueInLoop(
         std::bind(&TcpConnection::connectDestroyed, conn)

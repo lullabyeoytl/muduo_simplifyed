@@ -26,7 +26,7 @@ int Socket::accept(InetAddress* peeraddr)
 {
     sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
-    int connfd = ::accept(sockfd_, (sockaddr*)&addr, &addrlen);
+    int connfd = ::accept4(sockfd_, (sockaddr*)&addr, &addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);
     if (connfd >= 0)
     {
         peeraddr->setSockAddr(addr);
@@ -57,7 +57,10 @@ void Socket::setReuseAddr(bool on)
 void Socket::setReusePort(bool on)
 {
     int optval = on ? 1 : 0;
-    ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval));
+    if (::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &optval, sizeof(optval)) < 0 && on)
+    {
+        LOG_FATAL("SO_REUSEPORT set failed on sockfd:%d", sockfd_);
+    }
 }
 
 void Socket::setKeepAlive(bool on)

@@ -14,10 +14,10 @@ static EventLoop *CheckLoopNotNull(EventLoop *loop) {
 TcpConnection::TcpConnection(EventLoop *loop, const std::string &name,
                              int sockfd, const InetAddress &localAddr,
                              const InetAddress &peerAddr)
-    : loop_(CheckLoopNotNull(loop)), name_(name), state_(kConnecting),
-      reading_(true), socket_(new Socket(sockfd)),
-      channel_(new Channel(loop, sockfd)), localAddr_(localAddr),
-      peerAddr_(peerAddr), highWaterMark_(64 * 1024 * 1024) {
+    : loop_(CheckLoopNotNull(loop)), name_(name), localAddr_(localAddr),
+      peerAddr_(peerAddr), state_(kConnecting), reading_(true),
+      socket_(new Socket(sockfd)), channel_(new Channel(loop, sockfd)),
+      highWaterMark_(64 * 1024 * 1024) {
   channel_->setReadCallback(std::bind(&TcpConnection::handleRead, this, std::placeholders::_1));
   channel_->setWriteCallback(std::bind(&TcpConnection::handleWrite, this));
   channel_->setCloseCallback(std::bind(&TcpConnection::handleClose, this));
@@ -79,7 +79,7 @@ void TcpConnection::handleWrite()
         }
     }
     else{
-        LOG_ERROR("Connection fd =%d is down, no more writing");
+        LOG_ERROR("Connection fd =%d is down, no more writing", channel_->fd());
     }
 }
 
@@ -137,7 +137,7 @@ void TcpConnection::sendInLoop(const void* message, size_t len)
             if (errno != EWOULDBLOCK)
             {
                 LOG_ERROR("TcpConnection::sendInLoop");
-                if (errno = EPIPE || errno == ECONNRESET)  // sigpipe reset
+                if (errno == EPIPE || errno == ECONNRESET)  // sigpipe reset
                 {
                     faultError = true;
                 }
