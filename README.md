@@ -49,3 +49,12 @@ python3 test/compare_reuseport.py --connections 128 --hold 0.2 --rounds 5
 ```
 
 This starts the same echo server twice, once with `kNoReusePort` and once with `kReusePort`, then reports per-round elapsed time for the same burst workload.
+
+For an HTTP throughput comparison against nginx on a 12-core machine:
+
+```bash
+g++ -std=c++11 -I. test/http_bench.cc -Llib -lmymuduo -pthread -o build/http_bench_server
+python3 test/compare_with_nginx.py --threads 12 --connections 500 --duration 10s --mode reuseport
+```
+
+This uses `wrk` to benchmark a tiny keep-alive HTTP server built on this project against a local nginx instance serving the same `hello world` payload.
